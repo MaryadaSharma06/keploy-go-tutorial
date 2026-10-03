@@ -1,36 +1,119 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Building and Testing a Go API with Keploy
 
-## Getting Started
+A documentation-style interactive tutorial that explains how to test a Go API using Keploy.
 
-First, run the development server:
+The tutorial walks through recording real API interactions, generating test cases and PostgreSQL mocks, replaying those tests, and understanding what Keploy is doing behind the scenes.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Live Demo
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Tutorial:** https://keploy-go-tutorial-one.vercel.app/
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📖 About the Project
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This project was created as a hands-on tutorial based on the Keploy Go quickstart workflow.
 
-## Learn More
+The tutorial uses a Go URL-shortener API backed by PostgreSQL and explains how Keploy can capture real API interactions and convert them into reusable automated test cases.
 
-To learn more about Next.js, take a look at the following resources:
+Instead of simply listing commands, the tutorial explains **what each step does and why it is useful** for a Go developer.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## ✨ What You'll Learn
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The tutorial covers:
 
-## Deploy on Vercel
+- Setting up the Go sample application
+- Starting PostgreSQL with Docker
+- Verifying that the API is working
+- Recording API interactions with Keploy
+- Generating HTTP test cases
+- Capturing PostgreSQL mocks
+- Replaying recorded tests
+- Inspecting generated Keploy artifacts
+- Understanding the coverage report
+- Understanding how Keploy works behind the scenes
+- Troubleshooting common setup issues
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🧩 Tutorial Sections
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The documentation is organized into the following sections:
+
+1. **Overview**
+2. **Prerequisites**
+3. **Start PostgreSQL**
+4. **Verify the API**
+5. **Record with Keploy**
+6. **Replay the Tests**
+7. **Inspect Generated Artifacts**
+8. **Understand the Coverage Report**
+9. **Behind the Scenes**
+10. **Troubleshooting**
+11. **Tutorial Complete**
+
+## 🛠️ Tech Stack
+
+### Application
+
+- Go
+- Echo
+- PostgreSQL
+- Docker
+
+### Testing
+
+- Keploy
+- HTTP API testing
+- PostgreSQL mocking
+- Test replay
+
+### Documentation Website
+
+- Next.js
+- React
+- MDX
+- JavaScript
+- CSS
+
+### Deployment
+
+- Vercel
+- GitHub
+
+## 🎨 UI Features
+
+The tutorial is designed as a documentation-style learning experience with:
+
+- Responsive documentation layout
+- Sidebar navigation
+- Dark/light mode
+- Syntax-highlighted code blocks
+- Step-by-step sections
+- Terminal-style command blocks
+- Information and success callouts
+- Interactive visual diagrams
+- Clear explanations of each Keploy workflow
+- Responsive content layout
+
+Custom MDX components are used to make the tutorial more readable and interactive.
+
+## 📁 Project Structure
+
+```text
+keploy-go-tutorial/
+│
+├── app/
+│   ├── page.mdx
+│   ├── layout.tsx
+│   └── globals.css
+│
+├── components/
+│   ├── DocsLayout.tsx
+│   ├── MdxClient.jsx
+│   └── ThemeToggle.jsx
+│
+├── public/
+│
+├── mdx-components.js
+├── next.config.js
+├── package.json
+├── package-lock.json
+├── tsconfig.json
+└── README.md

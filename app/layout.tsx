@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import DocsLayout from "../components/DocsLayout";
+import DocsLayout from "@/components/DocsLayout";
 
 export const metadata: Metadata = {
-  title: "Building and Testing a Go API with Keploy",
-  description:
-    "A beginner-friendly tutorial for recording and replaying Go API interactions with Keploy.",
+  title: "Keploy Go API Tutorial",
+  description: "Building and Testing a Go API with Keploy",
 };
 
 export default function RootLayout({

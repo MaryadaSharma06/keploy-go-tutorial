@@ -3,41 +3,17 @@
 import { ReactNode, useEffect, useState } from "react";
 
 const sections = [
-  {
-    id: "overview",
-    label: "Overview",
-    search: "Building and Testing a Go API with Keploy",
-  },
-  {
-    id: "prerequisites",
-    label: "Prerequisites",
-    search: "Prerequisites",
-  },
-  {
-    id: "start-postgresql",
-    label: "Start PostgreSQL",
-    search: "Start PostgreSQL",
-  },
-  {
-    id: "verify-api",
-    label: "Verify the API",
-    search: "Verify the API",
-  },
-  {
-    id: "record",
-    label: "Record with Keploy",
-    search: "Record with Keploy",
-  },
-  {
-    id: "test",
-    label: "Replay the tests",
-    search: "Replay the tests",
-  },
-  {
-    id: "behind-the-scenes",
-    label: "Behind the scenes",
-    search: "Behind the scenes",
-  },
+  { id: "overview", label: "Overview" },
+  { id: "prerequisites", label: "Prerequisites" },
+  { id: "start-postgresql", label: "Start PostgreSQL" },
+  { id: "verify-api", label: "Verify the API" },
+  { id: "record", label: "Record with Keploy" },
+  { id: "test", label: "Replay the tests" },
+  { id: "inspect", label: "Inspect artifacts" },
+  { id: "coverage", label: "Coverage report" },
+  { id: "behind-the-scenes", label: "Behind the scenes" },
+  { id: "troubleshooting", label: "Troubleshooting" },
+  { id: "complete", label: "Tutorial complete" },
 ];
 
 export default function DocsLayout({
@@ -48,116 +24,9 @@ export default function DocsLayout({
   const [dark, setDark] = useState(false);
   const [progress, setProgress] = useState(0);
   const [activeSection, setActiveSection] = useState("overview");
+  const [showHelp, setShowHelp] = useState(false);
+  const [showWorkflow, setShowWorkflow] = useState(true);
 
-  /*
-   * Find headings in the MDX page and give them the IDs
-   * expected by our sidebar.
-   */
-  useEffect(() => {
-    const main = document.querySelector(".documentation");
-
-    if (!main) return;
-
-    const headings = Array.from(
-      main.querySelectorAll("h1, h2, h3")
-    ) as HTMLElement[];
-
-    sections.forEach((section) => {
-      const heading = headings.find((h) =>
-        h.textContent
-          ?.toLowerCase()
-          .includes(section.search.toLowerCase())
-      );
-
-      if (heading) {
-        heading.id = section.id;
-      }
-    });
-
-    /*
-     * Overview should point to the first heading.
-     */
-    if (headings.length > 0) {
-      headings[0].id = "overview";
-    }
-
-    /*
-     * Smooth scrolling.
-     */
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      const link = target.closest("a");
-
-      if (!link) return;
-
-      const href = link.getAttribute("href");
-
-      if (!href?.startsWith("#")) return;
-
-      const id = href.substring(1);
-      const element = document.getElementById(id);
-
-      if (element) {
-        event.preventDefault();
-
-        const offset = 90;
-
-        const top =
-          element.getBoundingClientRect().top +
-          window.scrollY -
-          offset;
-
-        window.scrollTo({
-          top,
-          behavior: "smooth",
-        });
-
-        window.history.replaceState(null, "", `#${id}`);
-      }
-    };
-
-    document.addEventListener("click", handleClick);
-
-    /*
-     * Detect which section is currently visible.
-     */
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntries = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort(
-            (a, b) =>
-              a.boundingClientRect.top -
-              b.boundingClientRect.top
-          );
-
-        if (visibleEntries.length > 0) {
-          setActiveSection(visibleEntries[0].target.id);
-        }
-      },
-      {
-        rootMargin: "-120px 0px -60% 0px",
-        threshold: 0,
-      }
-    );
-
-    sections.forEach((section) => {
-      const element = document.getElementById(section.id);
-
-      if (element) {
-        observer.observe(element);
-      }
-    });
-
-    return () => {
-      document.removeEventListener("click", handleClick);
-      observer.disconnect();
-    };
-  }, []);
-
-  /*
-   * Restore dark mode.
-   */
   useEffect(() => {
     const savedTheme = localStorage.getItem("keploy-theme");
 
@@ -166,34 +35,46 @@ export default function DocsLayout({
       document.documentElement.classList.add("dark");
     }
 
-    /*
-     * Reading progress.
-     */
     const handleScroll = () => {
       const scrollTop = window.scrollY;
-
       const height =
-        document.documentElement.scrollHeight -
-        window.innerHeight;
+        document.documentElement.scrollHeight - window.innerHeight;
 
-      const percentage =
-        height > 0 ? (scrollTop / height) * 100 : 0;
-
-      setProgress(Math.min(100, Math.max(0, percentage)));
+      setProgress(height > 0 ? (scrollTop / height) * 100 : 0);
     };
 
     window.addEventListener("scroll", handleScroll);
 
-    handleScroll();
+    const observers: IntersectionObserver[] = [];
+
+    sections.forEach((section) => {
+      const element = document.getElementById(section.id);
+
+      if (!element) return;
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setActiveSection(section.id);
+            }
+          });
+        },
+        {
+          rootMargin: "-20% 0px -65% 0px",
+        }
+      );
+
+      observer.observe(element);
+      observers.push(observer);
+    });
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      observers.forEach((observer) => observer.disconnect());
     };
   }, []);
 
-  /*
-   * Toggle dark/light mode.
-   */
   const toggleTheme = () => {
     const next = !dark;
 
@@ -208,32 +89,43 @@ export default function DocsLayout({
     }
   };
 
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
   return (
     <>
       {/* Reading progress */}
       <div
         className="reading-progress"
-        style={{
-          width: `${progress}%`,
-        }}
+        style={{ width: `${progress}%` }}
       />
 
-      {/* Top navigation */}
+      {/* Header */}
       <header className="topbar">
-        <div className="brand">
+        <a href="#overview" className="brand">
           <div className="brand-icon">K</div>
 
-          <div>
+          <div className="brand-text">
             <strong>Keploy</strong>
             <span>Developer Tutorial</span>
           </div>
-        </div>
+        </a>
 
         <div className="top-actions">
+          <span className="status-pill">
+            <span className="status-dot" />
+            Tutorial
+          </span>
+
           <a
             href="https://github.com/keploy"
             target="_blank"
             rel="noreferrer"
+            className="github-link"
           >
             GitHub ↗
           </a>
@@ -242,80 +134,248 @@ export default function DocsLayout({
             className="theme-button"
             onClick={toggleTheme}
             aria-label="Toggle dark mode"
-            title={
-              dark
-                ? "Switch to light mode"
-                : "Switch to dark mode"
-            }
+            title="Toggle dark mode"
           >
             {dark ? "☀️" : "🌙"}
           </button>
         </div>
       </header>
 
-      {/* Main documentation layout */}
       <div className="docs-container">
-
         {/* LEFT SIDEBAR */}
         <aside className="sidebar">
-          <div className="sidebar-label">
-            GO + KEPLOY
-          </div>
+          <div className="sidebar-label">GO + KEPLOY</div>
 
-          <nav>
+          <nav className="sidebar-nav">
             {sections.map((section) => (
               <a
                 key={section.id}
                 href={`#${section.id}`}
                 className={
-                  activeSection === section.id
-                    ? "active"
-                    : ""
+                  activeSection === section.id ? "active" : ""
                 }
               >
-                {section.label}
+                <span>{section.label}</span>
+
+                {activeSection === section.id && (
+                  <span className="active-arrow">→</span>
+                )}
               </a>
             ))}
           </nav>
 
           <div className="sidebar-card">
-            <span>🐰</span>
+            <div className="sidebar-card-icon">🚀</div>
 
             <strong>Learning Keploy?</strong>
 
             <p>
-              Follow this tutorial from setup to your
-              first automated API test.
+              Follow this tutorial from setup to your first
+              automated API test.
             </p>
+
+            <button onClick={() => setShowHelp(true)}>
+              Quick help →
+            </button>
           </div>
         </aside>
 
-        {/* DOCUMENTATION */}
+        {/* MAIN CONTENT */}
         <main className="documentation">
+          {/* Hero */}
+          <section className="tutorial-hero" id="overview">
+            <div className="hero-eyebrow">
+              <span className="hero-dot" />
+              GO + KEPLOY QUICKSTART
+            </div>
+
+            <h1>Building and Testing a Go API with Keploy</h1>
+
+            <p className="hero-description">
+              Learn how to capture real API interactions from a Go
+              application and turn them into automated, reusable
+              tests with Keploy.
+            </p>
+
+            <div className="tech-badges">
+              <span>Go</span>
+              <span>PostgreSQL</span>
+              <span>Docker</span>
+              <span>Keploy</span>
+            </div>
+          </section>
+
+          {/* Workflow */}
+          {showWorkflow && (
+            <section className="workflow-card">
+              <div className="workflow-header">
+                <div>
+                  <span className="section-kicker">
+                    HOW IT WORKS
+                  </span>
+
+                  <h2>From API request to automated test</h2>
+
+                  <p>
+                    Keploy observes real API interactions and
+                    converts them into repeatable test cases and
+                    mocks.
+                  </p>
+                </div>
+
+                <button
+                  className="workflow-close"
+                  onClick={() => setShowWorkflow(false)}
+                  title="Hide workflow"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="workflow">
+                <div className="workflow-step">
+                  <div className="workflow-icon">⚙️</div>
+                  <strong>Go API</strong>
+                  <span>Your application</span>
+                </div>
+
+                <div className="workflow-arrow">→</div>
+
+                <div className="workflow-step">
+                  <div className="workflow-icon">👀</div>
+                  <strong>Keploy</strong>
+                  <span>Records traffic</span>
+                </div>
+
+                <div className="workflow-arrow">→</div>
+
+                <div className="workflow-step">
+                  <div className="workflow-icon">🧪</div>
+                  <strong>Test Case</strong>
+                  <span>Request + response</span>
+                </div>
+
+                <div className="workflow-arrow">→</div>
+
+                <div className="workflow-step">
+                  <div className="workflow-icon">🔁</div>
+                  <strong>Replay</strong>
+                  <span>Automated testing</span>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Actual MDX content */}
           {children}
         </main>
 
-        {/* RIGHT TABLE OF CONTENTS */}
+        {/* RIGHT TOC */}
         <aside className="toc">
-          <div className="toc-title">
-            ON THIS PAGE
-          </div>
+          <div className="toc-title">ON THIS PAGE</div>
 
           {sections.map((section) => (
             <a
               key={section.id}
               href={`#${section.id}`}
               className={
-                activeSection === section.id
-                  ? "active"
-                  : ""
+                activeSection === section.id ? "active" : ""
               }
             >
               {section.label}
             </a>
           ))}
+
+          <div className="toc-help">
+            <span>💡</span>
+
+            <div>
+              <strong>Tip</strong>
+              <p>
+                You can use the sidebar to jump between tutorial
+                sections.
+              </p>
+            </div>
+          </div>
         </aside>
       </div>
+
+      {/* Help popup */}
+      {showHelp && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setShowHelp(false)}
+        >
+          <div
+            className="help-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              className="modal-close"
+              onClick={() => setShowHelp(false)}
+            >
+              ×
+            </button>
+
+            <div className="modal-icon">🚀</div>
+
+            <h2>How to use this tutorial</h2>
+
+            <p>
+              Follow the steps from top to bottom. Each section
+              contains the commands you need, what they do, and
+              why they matter.
+            </p>
+
+            <div className="modal-item">
+              <span>01</span>
+              <div>
+                <strong>Set up</strong>
+                <p>Start PostgreSQL and the Go application.</p>
+              </div>
+            </div>
+
+            <div className="modal-item">
+              <span>02</span>
+              <div>
+                <strong>Record</strong>
+                <p>
+                  Send real requests while Keploy records them.
+                </p>
+              </div>
+            </div>
+
+            <div className="modal-item">
+              <span>03</span>
+              <div>
+                <strong>Replay</strong>
+                <p>
+                  Run the generated tests without manually
+                  rewriting them.
+                </p>
+              </div>
+            </div>
+
+            <button
+              className="modal-primary"
+              onClick={() => setShowHelp(false)}
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Back to top */}
+      {progress > 20 && (
+        <button
+          className="back-to-top"
+          onClick={scrollToTop}
+          title="Back to top"
+        >
+          ↑
+        </button>
+      )}
     </>
   );
 }

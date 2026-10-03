@@ -1,33 +1,52 @@
-# Building and Testing a Go API with Keploy
+Learn how to capture real API interactions from a Go application and turn them into automated, reusable tests with Keploy.
 
+ 
 
-Learn how to record real API interactions from a Go application and replay them as automated tests using Keploy.
+<div className="hero-tags">
 
+  <span>Go</span>
 
-<div className="info-box">
+  <span>PostgreSQL</span>
 
-  <strong>What you'll build:</strong>
+  <span>Docker</span>
 
-  <div>
-
-    A simple Go URL-shortener API backed by PostgreSQL, with Keploy recording
-
-    and replaying its HTTP interactions.
-
-  </div>
+  <span>Keploy</span>
 
 </div>
 
+ 
+
+<Callout type="info" title="How this tutorial works">
+
+Keploy observes real API traffic from your Go application, records the request and response, captures the required database interactions, and turns them into reusable test cases.
+
+</Callout>
+
+ 
+
+<InfoCard
+
+  icon="🚀"
+
+  title="What you'll build"
+
+  description="A Go URL-shortener API backed by PostgreSQL, tested with Keploy by recording real API interactions and replaying them as automated tests."
+
+/>
+
+ 
 
 ## What you'll learn
 
+ 
 
 By the end of this tutorial, you'll know how to:
 
+ 
 
-- Start a Go application with PostgreSQL
+- Start the Go application with PostgreSQL
 
-- Verify that the API is working
+- Verify that the API is working before using Keploy
 
 - Record real API interactions with Keploy
 
@@ -35,25 +54,31 @@ By the end of this tutorial, you'll know how to:
 
 - Replay recorded test cases
 
-- Inspect Keploy-generated test artifacts
+- Inspect Keploy-generated artifacts and reports
 
 - Understand what Keploy is doing behind the scenes
 
+- Troubleshoot common setup problems
+
+ 
 
 ---
 
+ 
 
 <h2 id="prerequisites">Prerequisites</h2>
 
+ 
 
 Before starting, make sure you have:
 
+ 
 
 - Go installed
 
 - Docker installed and running
 
-- WSL/Linux environment
+- A WSL/Linux environment
 
 - Keploy installed
 
@@ -61,33 +86,35 @@ Before starting, make sure you have:
 
 - The Go sample application available locally
 
+ 
 
-<div className="info-box">
+<Callout type="tip" title="Why start with the application first?">
 
-  <strong>Why Keploy?</strong>
+Keploy records interactions with a running application. If the API or its database is not working before recording starts, the generated test cases will not represent a healthy application flow.
 
-  <div>
+</Callout>
 
-    Instead of manually writing every integration test, Keploy can capture
-
-    real API interactions and turn them into reusable test cases and mocks.
-
-  </div>
-
-</div>
-
+ 
 
 ---
 
+ 
 
 <h2 id="start-postgresql">Step 1 — Start PostgreSQL</h2>
 
+ 
 
-The sample Go application uses PostgreSQL as its database.
+<Step number="1" title="Start PostgreSQL">
 
+ 
 
 Move into the Go sample application:
 
+ 
+
+<Command title="Terminal">
+
+ 
 
 ```bash
 
@@ -95,9 +122,19 @@ cd ~/samples-go/echo-sql
 
 ```
 
+ 
 
-If PostgreSQL is not already running, start it with:
+</Command>
 
+ 
+
+The sample uses PostgreSQL as its database. Start the PostgreSQL service defined by the project's Docker Compose configuration:
+
+ 
+
+<Command title="Terminal">
+
+ 
 
 ```bash
 
@@ -105,9 +142,19 @@ docker compose up -d postgres
 
 ```
 
+ 
 
-You can verify the container:
+</Command>
 
+ 
+
+Check that the container is running:
+
+ 
+
+<Command title="Terminal">
+
+ 
 
 ```bash
 
@@ -115,137 +162,151 @@ docker compose ps
 
 ```
 
+ 
 
-You should see the PostgreSQL container running and healthy.
+</Command>
 
+ 
 
-<div className="note-box">
+Look for the PostgreSQL container with a running or healthy status.
 
-  <strong>Already running?</strong>
+ 
 
-  <div>
+<Callout type="info" title="If PostgreSQL is already running">
 
-    If PostgreSQL is already running in another terminal, do not start another
+Do not start a second PostgreSQL container. If `docker compose ps` already shows the database running and healthy, continue to the next step.
 
-    PostgreSQL container. Leave the existing container running and continue.
+</Callout>
 
-  </div>
+ 
 
-</div>
+</Step>
 
+ 
 
 ---
 
+ 
 
 <h2 id="verify-api">Step 2 — Verify the API</h2>
 
+ 
 
-Before using Keploy, make sure the Go application itself works.
+<Step number="2" title="Verify the API">
 
+ 
 
-Open a terminal and move to the sample application:
+Before recording anything with Keploy, make sure the Go API itself works.
 
+ 
 
-```bash
+Build the application:
 
-cd ~/samples-go/echo-sql
+ 
 
-```
+<Command title="Terminal">
 
-
-Start the Go application:
-
-
-```bash
-
-go run .
-
-```
-
-
-The application should connect to PostgreSQL and start the HTTP server.
-
-
-For this tutorial, the API is available on port `8082`.
-
-
-Open a second terminal and test the URL endpoint:
-
+ 
 
 ```bash
 
-curl --request POST \
-
-  --url http://localhost:8082/url \
-
-  --header 'content-type: application/json' \
-
-  --data '{"url":"https://github.com"}'
+go build -cover -o echo-psql-url-shortener .
 
 ```
 
+ 
 
-A successful response should contain a generated shortened URL.
+</Command>
 
+ 
 
-For example:
+Start the application:
 
+ 
 
-```json
+<Command title="Terminal">
 
-{
-
-  "ts": 1716546241744809281,
-
-  "url": "http://localhost:8082/Lhr4BWAi"
-
-}
-
-```
-
-
-The exact timestamp and generated short URL will be different for every request.
-
-
-You can also test the root endpoint:
-
+ 
 
 ```bash
 
-curl http://localhost:8082/
+./echo-psql-url-shortener
 
 ```
 
+ 
 
-<div className="success-box">
+</Command>
 
-  <strong>Checkpoint</strong>
+ 
 
-  <div>
+Keep this terminal running.
 
-    If the curl request receives an HTTP response, the Go application and
+ 
 
-    PostgreSQL connection are working. Continue to the Keploy recording step.
+Open a second terminal and send a request to the API:
 
-  </div>
+ 
 
-</div>
+<Command title="Second terminal">
 
+ 
+
+```bash
+
+curl http://localhost:8082
+
+```
+
+ 
+
+</Command>
+
+ 
+
+The exact response depends on the sample application, but the important point is that the server should accept the request instead of returning a connection error.
+
+ 
+
+<Callout type="success" title="Checkpoint">
+
+If the API responds successfully, the application is ready for Keploy recording.
+
+</Callout>
+
+ 
+
+<Callout type="warning" title="Connection refused?">
+
+Make sure the Go application is still running and that you are using the port configured by the sample.
+
+</Callout>
+
+ 
+
+</Step>
+
+ 
 
 ---
 
+ 
 
 <h2 id="record">Step 3 — Record with Keploy</h2>
 
+ 
 
-Now we will let Keploy observe the application's real HTTP and database interactions.
+<Step number="3" title="Record real API interactions">
 
+ 
 
-Keep the Go application running in one terminal.
+Move into the application directory:
 
+ 
 
-Open another terminal and move into the project:
+<Command title="Terminal">
 
+ 
 
 ```bash
 
@@ -253,81 +314,211 @@ cd ~/samples-go/echo-sql
 
 ```
 
+</Command> 
 
-Start the application through Keploy recording:
+Start Keploy recording around the application:
 
+ 
+
+<Command title="Terminal">
+
+ 
 
 ```bash
 
-keploy record -c "go run ."
+keploy record -c "./echo-psql-url-shortener"
 
 ```
 
+ 
 
-Keploy will start its agent and proxy.
+</Command>
 
+ 
 
-You may see messages similar to:
+Leave the recording process running.
 
+ 
+
+In another terminal, send real API requests.
+
+ 
+
+Create a shortened URL:
+
+ 
+
+<Command title="Terminal">
+
+ 
+
+```bash
+
+curl -X POST http://localhost:8082/url \
+
+  -H "Content-Type: application/json" \
+
+  -d '{"url":"https://example.com"}'
+
+```
+
+ 
+
+</Command>
+
+ 
+
+You can also send a GET request using the short ID returned by the API:
+
+ 
+
+<Command title="Terminal">
+
+ 
+
+```bash
+
+curl http://localhost:8082/<short-id>
+
+```
+
+ 
+
+</Command>
+
+ 
+
+When you have finished recording, stop the Keploy process:
+
+ 
+
+<Command title="Terminal">
+
+ 
 
 ```text
 
-starting TCP DNS server
-
-Keploy has taken control of the DNS resolution mechanism
-
-Proxy started at port 16789
-
-Starting Agent's HTTP server
+Ctrl+C
 
 ```
 
+ 
 
-These messages indicate that Keploy has started its recording infrastructure.
+</Command>
 
+ 
 
-With the application running under Keploy, send API requests from another terminal.
+Keploy stores generated test cases and mocks inside the `keploy/` directory.
 
+ 
 
-For example:
+<Callout type="success" title="What Keploy captured">
 
+The recording can contain HTTP requests and responses as well as external interactions such as PostgreSQL calls required to reproduce the API behavior.
+
+</Callout>
+
+ 
+
+</Step>
+
+ 
+
+---
+
+ 
+
+<h2 id="test">Step 4 — Replay the tests</h2>
+
+ 
+
+<Step number="4" title="Replay recorded tests">
+
+ 
+
+Make sure PostgreSQL is running:
+
+ 
+
+<Command title="Terminal">
+
+ 
 
 ```bash
 
-curl --request POST \
-
-  --url http://localhost:8082/url \
-
-  --header 'content-type: application/json' \
-
-  --data '{"url":"https://github.com"}'
+docker compose up -d postgres
 
 ```
 
+ 
 
-You can create more than one interaction:
+</Command>
 
+ 
+
+Run the Keploy tests:
+
+ 
+
+<Command title="Terminal">
+
+ 
 
 ```bash
 
-curl --request POST \
-
-  --url http://localhost:8082/url \
-
-  --header 'content-type: application/json' \
-
-  --data '{"url":"https://google.com"}'
+keploy test -c "./echo-psql-url-shortener"
 
 ```
 
+ 
 
-Keploy captures these interactions and stores them under the project's `keploy`
+</Command>
 
-directory.
+ 
 
+Keploy replays the recorded requests and compares the observed responses with the recorded behavior.
 
-After recording, inspect the generated files:
+ 
 
+<Callout type="success" title="A passing replay">
+
+A successful test run means the recorded interaction could be reproduced by the application under test.
+
+</Callout>
+
+ 
+
+<Callout type="info" title="Why replay instead of manually repeating curl commands?">
+
+The recorded test becomes a reusable regression test. You can run the same interaction again after changing the application without manually recreating the entire request sequence.
+
+</Callout>
+
+ 
+
+</Step>
+
+ 
+
+---
+
+ 
+
+<h2 id="inspect">Step 5 — Inspect the generated artifacts</h2>
+
+ 
+
+<Step number="5" title="Inspect Keploy artifacts">
+
+ 
+
+Inspect the generated `keploy` directory:
+
+ 
+
+<Command title="Terminal">
+
+ 
 
 ```bash
 
@@ -335,9 +526,15 @@ find keploy -maxdepth 3 -type f | sort
 
 ```
 
+ 
 
-Typical generated artifacts include:
+</Command>
 
+ 
+
+You should see files and directories similar to:
+
+ 
 
 ```text
 
@@ -353,10 +550,6 @@ keploy/
 
 │   └── tests/
 
-│       ├── post-url-1.yaml
-
-│       └── get-root-1.yaml
-
 ├── test-set-2/
 
 │   ├── config.yaml
@@ -371,190 +564,47 @@ keploy/
 
 ```
 
+ 
 
-The exact files and test-set numbers can differ depending on previous recording
+The exact filenames and number of test sets can differ depending on the interactions you recorded.
 
-and replay runs.
+ 
 
+<InfoCard
 
----
+  icon="📁"
 
+  title="What are these files?"
 
-<h2 id="test">Step 4 — Replay the tests</h2>
+  description="Test YAML files describe recorded HTTP interactions. Mock files contain captured external dependencies such as database interactions. Reports contain the results of replayed tests."
 
+/>
 
-Once Keploy has generated test cases and mocks, we can replay them.
+ 
 
+</Step>
 
-First, make sure the application is available for the test run as required by
-
-your Keploy command.
-
-
-From the project directory:
-
-
-```bash
-
-cd ~/samples-go/echo-sql
-
-```
-
-
-Run the recorded tests:
-
-
-```bash
-
-keploy test -c "go run ."
-
-```
-
-
-Keploy will start the application, replay the recorded requests, use the
-
-generated mocks where required, and compare the resulting responses with the
-
-recorded responses.
-
-
-A successful run looks similar to:
-
-
-```text
-
-TESTRUN SUMMARY. For test-set: "test-set-2"
-
-
-Total tests:       2
-
-Total test passed: 2
-
-Total test failed: 0
-
-```
-
-
-For a complete run, you may see output similar to:
-
-
-```text
-
-COMPLETE TESTRUN SUMMARY.
-
-
-Total tests:       6
-
-Total test passed: 6
-
-Total test failed: 0
-
-Total time taken:  "5.10 s"
-
-```
-
-
-This means the recorded test cases were replayed successfully.
-
+ 
 
 ---
 
-
-<h2 id="inspect">Step 5 — Inspect the generated artifacts</h2>
-
-
-Keploy stores test cases, mocks, mappings, and reports inside the `keploy`
-
-directory.
-
-
-List the generated files:
-
-
-```bash
-
-find keploy -maxdepth 3 -type f | sort
-
-```
-
-
-Inspect a generated test case:
-
-
-```bash
-
-cat keploy/test-set-1/tests/post-url-1.yaml
-
-```
-
-
-Inspect the generated PostgreSQL mocks:
-
-
-```bash
-
-cat keploy/test-set-1/mocks.yaml
-
-```
-
-
-Inspect a test report:
-
-
-```bash
-
-cat keploy/reports/test-run-0/test-set-1-report.yaml
-
-```
-
-
-The test YAML contains information about the HTTP request and expected response,
-
-while `mocks.yaml` contains recorded external/database interactions used during
-
-replay.
-
-
----
-
+ 
 
 <h2 id="coverage">Step 6 — Understand the coverage report</h2>
 
+ 
 
-After a successful Keploy test run, Keploy can calculate coverage for the run.
+<Step number="6" title="Understand the coverage report">
 
+ 
 
-You may see output such as:
+Inspect the reports:
 
+ 
 
-```text
+<Command title="Terminal">
 
-Total Coverage Percentage: 58.82%
-
-```
-
-
-Coverage represents the portion of the application's relevant execution that
-
-was exercised by the recorded tests. It is useful for understanding how much of
-
-the application is being exercised, but it should not be interpreted as proof
-
-that every possible behavior is tested.
-
-
-Coverage reports are stored under:
-
-
-```bash
-
-keploy/reports/
-
-```
-
-
-You can inspect them with:
-
+ 
 
 ```bash
 
@@ -562,131 +612,149 @@ find keploy/reports -type f | sort
 
 ```
 
+ 
 
----
+</Command>
 
+ 
 
-<h2 id="behind-the-scenes">Step 7 — Behind the scenes</h2>
+You may see files such as:
 
-
-The complete workflow can be understood as:
-
+ 
 
 ```text
 
-Real API request
+keploy/reports/test-run-0/coverage.yaml
 
-       |
-
-       v
-
-Go application
-
-       |
-
-       +------> PostgreSQL
-
-       |
-
-       v
-
-Keploy agent / proxy
-
-       |
-
-       +------> Records HTTP interaction
-
-       |
-
-       +------> Captures database interaction
-
-       |
-
-       v
-
-Test cases + mocks
-
-       |
-
-       v
-
-Keploy test replay
-
-       |
-
-       v
-
-Compare actual response with recorded response
-
-       |
-
-       v
-
-Pass / Fail + report
+keploy/reports/test-run-0/test-set-1-report.yaml
 
 ```
 
+ 
 
-### What happens during recording?
+The report helps you understand what happened during the replayed test run.
 
+ 
 
-When you run the application through Keploy and send an API request:
+<Callout type="info" title="Coverage is not the same as correctness">
 
+Code coverage tells you which code was exercised. A high coverage value does not automatically mean that every behavior is tested correctly. Keploy's recorded request/response tests add another layer by checking actual API behavior.
 
-1. The request reaches the Go application through Keploy's proxy.
+</Callout>
 
-2. The application processes the request.
+ 
 
-3. The application communicates with PostgreSQL.
+</Step>
 
-4. Keploy observes the interaction.
-
-5. Keploy creates a reusable HTTP test case.
-
-6. Database interactions can be stored as mocks.
-
-7. The generated artifacts are written into the `keploy` directory.
-
-
-### What happens during replay?
-
-
-During a test run:
-
-
-1. Keploy starts the application.
-
-2. A previously recorded HTTP request is replayed.
-
-3. Keploy provides the recorded mock interactions when required.
-
-4. The application processes the request.
-
-5. Keploy receives the application's response.
-
-6. The response is compared with the recorded response.
-
-7. The test is marked as passed or failed.
-
-8. Keploy generates a test report and coverage information.
-
+ 
 
 ---
 
+ 
+
+<h2 id="behind-the-scenes">Step 7 — Behind the scenes</h2>
+
+ 
+
+<Step number="7" title="What Keploy is doing">
+
+ 
+
+<Diagram
+
+  title="From API request to automated test"
+
+  items={[
+
+    { icon: "⚙️", title: "Go API", text: "Your application" },
+
+    { icon: "👀", title: "Keploy", text: "Observes traffic" },
+
+    { icon: "🧪", title: "Test Case", text: "Stores request + response" },
+
+    { icon: "🔁", title: "Replay", text: "Runs the interaction again" }
+
+  ]}
+
+/>
+
+ 
+
+### 1. Your Go application receives a request
+
+ 
+
+A client sends an HTTP request to the API.
+
+ 
+
+### 2. Keploy observes the interaction
+
+ 
+
+During recording, Keploy observes the application's interaction with external dependencies.
+
+ 
+
+### 3. Keploy creates reusable test data
+
+ 
+
+The request and response are converted into a test case. External dependency interactions can be stored as mocks.
+
+ 
+
+### 4. The test is replayed
+
+ 
+
+During testing, Keploy sends the recorded request to the application again and checks the resulting behavior.
+
+ 
+
+<Callout type="tip" title="The key idea">
+
+Instead of manually writing every integration test from scratch, you can turn real API interactions into reusable regression tests.
+
+</Callout>
+
+ 
+
+<InfoCard
+
+  icon="💡"
+
+  title="Why this matters for a Go developer"
+
+  description="You can validate real application behavior, including interactions with external dependencies, without having to manually recreate every integration scenario."
+
+/>
+
+ 
+
+</Step>
+
+ 
+
+---
+
+ 
 
 <h2 id="troubleshooting">Troubleshooting</h2>
 
+ 
 
-### PostgreSQL is already running
+<Callout type="warning" title="PostgreSQL is not running">
 
+ 
 
-If Docker shows the PostgreSQL container as running and healthy, do not start
+Check Docker:
 
-another copy.
+ 
 
+<Command title="Terminal">
 
-Check it with:
-
+ 
 
 ```bash
 
@@ -694,125 +762,194 @@ docker compose ps
 
 ```
 
+ 
 
-### curl says "Could not connect to server"
+</Command>
 
+ 
 
-For example:
+If the PostgreSQL service is stopped:
 
+ 
 
-```text
+<Command title="Terminal">
 
-curl: (7) Failed to connect to localhost port 8082
-
-```
-
-
-This means nothing is currently listening on port `8082`.
-
-
-Start the Go application, or start it through Keploy if you are recording or
-
-testing.
-
-
-### Keploy reports an unknown mock type
-
-
-If you see:
-
-
-```text
-
-failed to unmarshal a mock yaml doc of unknown type
-
-{"type":"Postgres"}
-
-```
-
-
-inspect the generated mock file:
-
+ 
 
 ```bash
 
-cat keploy/test-set-1/mocks.yaml
+docker compose up -d postgres
 
 ```
 
+ 
 
-Do not immediately delete all test data. First identify which test-set and mock
+</Command>
 
-file contains the incompatible entry.
+ 
 
+</Callout>
 
-If you are intentionally regenerating the test artifacts, remove only the
+ 
 
-specific problematic test-set and record again.
+<Callout type="warning" title="API connection refused">
 
+ 
 
-### Check the current Keploy artifacts
+Check whether the Go process is running:
 
+ 
 
-Use:
+<Command title="Terminal">
 
+ 
 
 ```bash
 
-find keploy -maxdepth 3 -type f | sort
+ps aux | grep echo-psql-url-shortener
 
 ```
 
+ 
 
-This is safer than assuming a particular test-set number because Keploy can
+</Command>
 
-create multiple test sets and reports during repeated runs.
+ 
 
+Also confirm the port:
+
+ 
+
+<Command title="Terminal">
+
+ 
+
+```bash
+
+curl http://localhost:8082
+
+```
+
+ 
+
+</Command>
+
+ 
+
+</Callout>
+
+ 
+
+<Callout type="warning" title="Keploy command not found">
+
+ 
+
+Check that Keploy is installed and available in your PATH:
+
+ 
+
+<Command title="Terminal">
+
+ 
+
+```bash
+
+keploy --version
+
+```
+
+ 
+
+</Command>
+
+ 
+
+</Callout>
+
+ 
+
+<Callout type="warning" title="Tests fail during replay">
+
+ 
+
+First check whether PostgreSQL is running and whether the application is using the expected port and database configuration.
+
+ 
+
+Then inspect the generated test report:
+
+ 
+
+<Command title="Terminal">
+
+ 
+
+```bash
+
+find keploy/reports -type f | sort
+
+```
+
+ 
+
+</Command>
+
+ 
+
+</Callout>
+
+ 
 
 ---
 
+ 
 
 <h2 id="complete">Tutorial complete</h2>
 
+ 
 
-You have now followed the complete flow:
+<Callout type="success" title="Tutorial complete!">
 
+You have now gone through the complete Go + PostgreSQL + Keploy workflow: start the database, verify the API, record real interactions, generate reusable tests and mocks, replay the tests, and inspect the resulting artifacts.
 
-```text
+</Callout>
 
-PostgreSQL
+ 
 
-   ↓
+<InfoCard
 
-Go application
+  icon="🚀"
 
-   ↓
+  title="Next step"
 
-Verify API with curl
+  description="Try modifying the Go API, rerun the recorded tests, and observe how automated API regression testing can catch behavior changes."
 
-   ↓
+/>
 
-Record with Keploy
+ 
 
-   ↓
+## Quick reference
 
-Generate test cases and mocks
+ 
 
-   ↓
+| Task | Command |
 
-Replay tests
+|---|---|
 
-   ↓
+| Enter the sample | `cd ~/samples-go/echo-sql` |
 
-Generate reports and coverage
+| Start PostgreSQL | `docker compose up -d postgres` |
 
-```
+| Check containers | `docker compose ps` |
 
+| Build the API | `go build -cover -o echo-psql-url-shortener .` |
 
-The key idea is simple: Keploy turns real application interactions into
+| Run the API | `./echo-psql-url-shortener` |
 
-replayable automated tests, including the required mocked interactions, so the
+| Check Keploy | `keploy --version` |
 
-same behavior can be tested repeatedly without manually writing every
+| Record | `keploy record -c "./echo-psql-url-shortener"` |
 
-integration test.
+| Replay tests | `keploy test -c "./echo-psql-url-shortener"` |
+
+| Inspect artifacts | `find keploy -maxdepth 3 -type f | sort` |
